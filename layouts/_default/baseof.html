@@ -1,0 +1,25 @@
+<html
+  lang="{{ .Site.Language.LanguageCode }}"
+  dir="{{ .Site.Language.LanguageDirection }}"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {{ $stylesheet := resources.Get "css/index.css" | resources.Fingerprint }}
+    <link
+      rel="stylesheet"
+      href="{{ $stylesheet.Permalink }}"
+      integrity="{{ $stylesheet.Data.Integrity }}"
+    />
+    {{ $icon := resources.Get "svg/favicon.svg" | resources.Fingerprint }}
+    <link
+      rel="icon"
+      href="{{ $icon.Permalink }}"
+      integrity="{{ $icon.Data.Integrity }}"
+    />
+    <title>{{ .Site.Title }}</title>
+  </head>
+  <body class="overflow-y-hidden bg-neutral-100 dark:bg-neutral-800">
+    <main aria-role="main">{{ block "main" . }} {{ end }}</main>
+  </body>
+</html>

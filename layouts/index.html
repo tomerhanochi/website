@@ -1,0 +1,17 @@
+{{ define "main" }}
+<div class="container mx-auto flex h-screen flex-col sm:flex-row">
+  <div class="flex sm:w-1/2">
+    <div class="mx-auto mt-5 flex flex-col sm:my-auto">
+      <p
+        class="block align-middle text-3xl font-bold text-gray-800 sm:text-3xl lg:text-5xl lg:leading-tight dark:text-white"
+      >
+        Tomer Hanochi
+      </p>
+      {{ partial "socials.html" .Site.Params.socials }}
+    </div>
+  </div>
+  <div class="no-scrollbar flex overflow-y-scroll sm:w-1/2">
+    {{ partial "experience_timeline.html" .Site.Params.experience }}
+  </div>
+</div>
+{{ end }}
