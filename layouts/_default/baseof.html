@@ -1,14 +1,21 @@
-<html lang="{{ .Site.Language.LanguageCode }}" dir="{{ .Site.Language.LanguageDirection }}">
+<!DOCTYPE html>
+<html lang="{{ .Site.LanguageCode }}">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {{ $stylesheet := resources.Get "css/index.css" | resources.Minify | resources.Fingerprint }}
-    <link rel="stylesheet" href="{{ $stylesheet.Permalink }}" integrity="{{ $stylesheet.Data.Integrity }}" />
-    {{ $icon := resources.Get "svg/favicon.svg" | resources.Minify | resources.Fingerprint }}
-    <link rel="icon" href="{{ $icon.Permalink }}" integrity="{{ $icon.Data.Integrity }}" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ .Site.Title }}</title>
+    {{ $stylesheet := resources.Get "css/style.css" | resources.Minify | resources.Fingerprint }}
+    <link rel="stylesheet" href="{{ $stylesheet.Permalink }}" integrity="{{ $stylesheet.Data.Integrity }}" />
   </head>
-  <body class="overflow-y-hidden bg-neutral-100 dark:bg-neutral-800">
-    <main aria-role="main">{{ block "main" . }} {{ end }}</main>
+  <body>
+    <header>
+      <h1>
+        {{ .Site.Title | markdownify }}
+      </h1>
+    </header>
+    <main>
+      {{ block "main" . }}{{ end }}
+    <main>
   </body>
 </html>
+
