@@ -274,6 +274,7 @@ article {
     border: 1px solid var(--color-on-surface-variant);
     border-collapse: collapse;
     color: var(--color-on-surface);
+    text-align: center;
     td, th {
       padding: 0.25rem;
       border: 1px solid var(--color-on-surface-variant);
@@ -316,7 +317,7 @@ article {
     width: 100%;
   }
   /* Scrollable table and code */
-  div:has(> table), pre:has(> code) {
+  div.footnotes > ol, div:has(> table), pre:has(> code) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     max-width: 100vw;
