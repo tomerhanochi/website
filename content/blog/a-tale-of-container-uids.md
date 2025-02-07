@@ -1,12 +1,12 @@
 +++
 title = "A Tale of Container UIDs"
 date = "2025-01-31"
-description = "A deep dive into what decides the UID of a file on the host created by a container."
+description = "A deep dive into what affects the user ID of a file on the host created by a container."
 toc = true
 +++
 
-## Problem
-If a process running inside a container as UID 1000 creates a file, what UID will be shown as the file's owner when viewed from outside the container?
+## The Question
+If a process running inside a container as user ID 1000 creates a file on a shared mount, what user ID will be shown as the file's owner when viewed from outside the container?
 
 ### Example
 Assume we have the following Containerfile:
@@ -22,15 +22,15 @@ And then I run the following commands:
 podman build . -t debian:bookworm-nonroot
 podman run --volume /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
 ```
-What will be shown as the owner UID when running the following command?
+What will be shown as the owner user ID when running the following command?
 ```shell
-ls -la /tmp/x
+ls -l /tmp/x
 ```
 
 ## Background
 Before discussing the solution to this particular problem, I want to ensure that you have the all the prerequisite knowledge used in the answer.
 
-If you feel like you already understand the subjects discussed in the following sections, you can skip to the [Solution](#solution).
+If you feel like you already understand the subjects discussed in the following sections, you can skip to the [Revisting The Question](#revisting-the-question) Section.
 
 ### Containers
 > Linux Containers have emerged as a key open source application packaging and delivery technology, combining lightweight application isolation with the flexibility of image-based deployment methods.
@@ -45,7 +45,7 @@ In our eyes, containers are simply processes. These processes are then isolated 
 
 ### Linux Namespaces
 > A namespace wraps a global system resource in an abstraction that makes it appear to the processes within the namespace that they have their own isolated instance of the global resource.
-> 
+>
 > <cite>- namespaces(7) - Linux Man Pages[^2]</cite>
 
 Linux namespaces are isolation mechanisms used to isolate processes from certain resources accessible through the linux kernel.
@@ -56,92 +56,92 @@ There are a several namespace types, but of particualr importance to containers 
 * Network namespaces
 * User namespaces
 
-This post, as foreshadowed by the [Problem](#problem), is going to discuss the [User Namespace](#user-namespace).
+This post, as foreshadowed by the [The Question](#the-question), is going to discuss the [User Namespace](#user-namespace).
 
 ### User Namespace
 > User namespaces isolate security-related identifiers and attributes, in particular, user IDs and group IDs, the root directory, keys, and capabilities.<br>
-> 
+>
 > <cite>- user_namespaces(7) - Linux Man Pages[^3]</cite>
 
-Processes within a user namespace are unaware of the <mark>UID</mark>s/<mark>GID</mark>s used on the host. What does a <mark>UID</mark>/<mark>GID</mark> within a user namespace look like to an outside observer?
+Processes within a user namespace are unaware of the user IDs/group IDs used on the host. What does a user ID/group ID within a user namespace look like to an outside observer?
 
 An important addition is made in the next paragraph:
 > A process's user and group IDs can be different inside and outside a user namespace.  In particular, a process can have a normal unprivileged user ID outside a user namespace while at the same time having a user ID of 0 inside the namespace.<br>
-> 
+>
 > <cite>- user_namespaces(7) - Linux Man Pages[^3]</cite>
 
-If <mark>UID</mark>s/<mark>GID</mark>s inside and outside a user namespace don't have to match, what is the relationship between them?
+If user IDs/group IDs inside and outside a user namespace don't have to match, what is the relationship between them?
 
-### UID and GID Mapping
-<mark>UID</mark>/<mark>GID</mark> mapping is the act of mapping <mark>UID</mark>s/<mark>GID</mark>s within a user namespace to UIDs/GIDS outside of it.
+### uid_map and gid_map
+user ID/group ID mapping is the act of mapping user IDs/group IDs within a user namespace to user IDs/group IDS outside of it.
 
-By default, processes within a user namespace use the identity mapping, meaning a <mark>UID</mark>/<mark>GID</mark> inside the namespace is equivalent to the same <mark>UID</mark>/<mark>GID</mark> on the host.
-| Namespace UID | Host UID |
+By default, processes within a user namespace use the identity mapping, meaning a user ID/group ID inside the namespace is equivalent to the same user ID/group ID on the host.
+| Namespace user ID | Host user ID |
 | ------------- | -------- |
 | 0             | 0        |
 | 1             | 1        |
 | 2             | 2        |
 | . . .         | . . .    |
 
-In this case, if a process running under a user with UID 2, using the above <mark>uid_map</mark>, creates a file, a user outside the namespace will see the file as owned by UID 2.
+In this case, if a process running under a user with user ID 2, using the above <mark>uid_map</mark>, creates a file, a user outside the namespace will see the file as owned by user ID 2.
 
-However, you don't have to use the default mapping. <mark>UID</mark>/<mark>GID</mark> mappings can be modified through the files <mark>/proc/\<pid\>/uid_map</mark> and <mark>/proc/\<pid\>/gid_map</mark>.
+However, you don't have to use the default mapping. user ID/group ID mappings can be modified through the files <mark>/proc/\<pid\>/uid_map</mark> and <mark>/proc/\<pid\>/gid_map</mark>.
 
 In these files, each line is of the following format:
 ```plaintext
 <starting-namespace-uid/gid> <starting-host-uid/gid> <count>
 ```
-Each line gives a range of consecutive <mark>UID</mark>s/<mark>GID</mark>s to map from within the namespace to the host. For example, the following <mark>uid_map</mark>:
+Each line gives a range of consecutive user IDs/group IDs to map from within the namespace to the host. For example, the following <mark>uid_map</mark>:
 ```plaintext
 0 1000 3
 ```
 
-Results in the following mapping between UIDs in the namespace to the host:
+Results in the following mapping between user IDs in the namespace to the host:
 
-| Namespace UID | Host UID |
+| Namespace user ID | Host user ID |
 | ------------- | -------- |
 | 0             | 1000     |
 | 1             | 1001     |
 | 2             | 1002     |
 
-In this case, if a process running under a user with UID 2, using the above <mark>uid_map</mark>, creates a file, a user outside the namespace will see the file as owned by UID 1002.
+In this case, if a process running under a user with user ID 2, using the above <mark>uid_map</mark>, creates a file, a user outside the namespace will see the file as owned by user ID 1002.
 
-Any <mark>UID</mark>/<mark>GID</mark> not found in the <mark>uid_map</mark>/<mark>gid_map</mark> files, uses the deafult identity mapping. For example, in the same namespace, if a process run by a user with UID 3 creates a file, then a user outside the namespace will see it is owned by UID 3, not 1003, since it was not mapped.
+Any user ID/group ID not found in the <mark>uid_map</mark>/<mark>gid_map</mark> files, uses the deafult identity mapping. For example, in the same namespace, if a process run by a user with user ID 3 creates a file, then a user outside the namespace will see it is owned by user ID 3, not 1003, since it was not mapped.
 
 #### Permissions
 Not every process can modify another process's <mark>uid_map</mark>/<mark>gid_map</mark>, or even its own; several restrictions apply, which are outlined below:
 
 > One of the following two cases applies: <br>
-> 1.  Either the writing process has the <mark>CAP_SETUID</mark>/<mark>CAP_SETUID</mark> capability in the parent user namespace.<br>
+> 1.  Either the writing process has the CAP_SETUID/CAP_SETGID capability in the parent user namespace.<br>
 >      *  No further restrictions apply: the process can make mappings to arbitrary user IDs (group IDs) in the parent user namespace.<br>
 > 2.  Or otherwise all of the following restrictions apply:<br>
->      *  The data written to <mark>uid_map</mark>/<mark>gid_map</mark> must consist of a single line that maps the writing process's effective <mark>UID</mark>/<mark>GID</mark> in the parent user namespace to a <mark>UID</mark>/<mark>GID</mark> in the user namespace.<br>
->      *  The writing process must have the same effective UID as the process that created the user namespace.<br>
-> 
+>      *  The data written to <mark>uid_map</mark>/<mark>gid_map</mark> must consist of a single line that maps the writing process's effective user ID/group ID in the parent user namespace to a user ID/group ID in the user namespace.<br>
+>      *  The writing process must have the same effective user ID as the process that created the user namespace.<br>
+>
 > <cite>user_namespaces(7) - Linux Man Pages[^3]</cite>
 
 Let's break it down:
 
-> Either the writing process has the <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark> capability in the parent user namespace.
+> Either the writing process has the CAP_SETUID/CAP_SETGID capability in the parent user namespace.
 
-<mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark> are capablities[^4] that give a process the ability to modify another process's <mark>uid_map</mark>/<mark>gid_map</mark>. So any process that has the <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark> capability, can modify any other process's <mark>uid_map</mark>/<mark>gid_map</mark> so long as that other process is within his user namespace.
+CAP_SETUID/CAP_SETGID are capablities[^4] that give a process the ability to modify another process's <mark>uid_map</mark>/<mark>gid_map</mark>. So any process that has the CAP_SETUID/CAP_SETGID capability, can modify any other process's <mark>uid_map</mark>/<mark>gid_map</mark> so long as that other process is within his user namespace.
 
 If the process doesn't have those capabilities, all of the following restrictions must apply:
-> The data written to <mark>uid_map</mark>/<mark>gid_map</mark> must consist of a single line that maps the writing process's effective <mark>UID</mark>/<mark>GID</mark> in the parent user namespace to a <mark>UID</mark>/<mark>GID</mark> in the user namespace.
+> The data written to <mark>uid_map</mark>/<mark>gid_map</mark> must consist of a single line that maps the writing process's effective user ID/group ID in the parent user namespace to a user ID/group ID in the user namespace.
 
 ```plaintext
 <child-namespace-uid> <parent-namespace-uid> 1
 ```
-The above is the only valid value that can be written to a process's <mark>uid_map</mark>. It means that we can only map our current UID to some UID inside the namespace, and that's it.
+The above is the only valid value that can be written to a process's <mark>uid_map</mark>. It means that we can only map our current user ID to some user ID inside the namespace, and that's it.
 
-> The writing process must have the same effective UID as the process that created the user namespace.
+> The writing process must have the same effective user ID as the process that created the user namespace.
 
 If I don't have the required capabilties, I can only modify a process's <mark>uid_map</mark>/<mark>gid_map</mark> with the above values if I was the one that created its namespace.
 
-### SubUIDs and SubGIDs
-Due to these heavy restrictions, and the need to avoid vulnerabilities by ensuring that every <mark>UID</mark>/<mark>GID</mark> in the namespace is mapped to a non-root <mark>UID</mark>/<mark>GID</mark>, container engines like podman came up with a mechanism called <mark>SubUID</mark>s/<mark>SubGID</mark>s.
+### subuids and subgids
+Due to these heavy restrictions, and the need to avoid vulnerabilities by ensuring that every user ID/group ID in the namespace is mapped to a non-root user ID/group ID, container engines like podman came up with a mechanism called subuids/subgids.
 
-<mark>SubUID</mark>s/<mark>SubGID</mark>s allow for the system administrator to delegate <mark>UID</mark>/<mark>GID</mark> ranges to a non-root user. This enables the non-root user to map more than 1 <mark>UID</mark>/<mark>GID</mark> from the namespace, even though they don't have the <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark> capabilities.
+subuids/subgids allow for the system administrator to delegate user ID/group ID ranges to a non-root user. This enables the non-root user to map more than 1 user ID/group ID from the namespace, even though they don't have the CAP_SETUID/CAP_SETGID capabilities.
 
 These are configured using the files <mark>/etc/subuid</mark> and <mark>/etc/subgid</mark>, in which each line has the following format:
 ```plaintext
@@ -161,25 +161,142 @@ Allows <mark>tomerh</mark> to create a container process with the following <mar
 0 100000 65536
 ```
 
-However, if you'll recall, in the [Permissions](#permissions) section, I said that unless we have the <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark> capabilities, we can only map ourselves into the namespace. We certainly don't have <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark>, so what gives? How can we suddenly map 65536 users into the namespace?
+However, if you'll recall, in the [Permissions](#permissions) section, I said that unless we have the CAP_SETUID/CAP_SETGID capabilities, we can only map ourselves into the namespace. We certainly don't have CAP_SETUID/CAP_SETGID, so what gives? How can we suddenly map 65536 users into the namespace?
 
 Well, **we** can't do that, but **container engines** can, due to a little trick called file capabilities.
 
-Container engines utilize 2 binaries called <mark>newuidmap</mark>/<mark>newgidmap</mark>, that  have the <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark> capabilities. These binaries read <mark>/etc/subuid</mark> and <mark>/etc/subgid</mark>, verify that you have enough <mark>UID</mark>s/<mark>GID</mark>s to map all of the <mark>UID</mark>s/<mark>GID</mark>s inside the container, and modify the container process's <mark>uid_map</mark>/<mark>gid_map</mark>.
+Container engines utilize 2 binaries called <mark>newuidmap</mark>/<mark>newgidmap</mark>, that  have the CAP_SETUID/CAP_SETGID capabilities. These binaries read <mark>/etc/subuid</mark> and <mark>/etc/subgid</mark>, verify that you have enough user IDs/group IDs to map all of the user IDs/group IDs inside the container, and modify the container process's <mark>uid_map</mark>/<mark>gid_map</mark>.
 
 
-## Solution
-Now that we covered the background required, we can dive into the solution. Similar to the [Permissions](#permissions) section, the solution is split into 2.
+## Revisting The Question
+Now that we covered the background required, we can revisit [The Question](#the-question).
+As we've discussed previously, we know that in all possible cases, there is some kind of user ID mapping. Whether it is the identity mapping as is the default when running rootful, or some other mapping configured by the system administrator/container engine.
 
-### Rootful Containers
-For rootful containers(containers started by the root user), since the root user possesses all capabilities, including <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark>, they can configure any <mark>UID</mark>/<mark>GID</mark> mapping they please, including the default identity mapping.
+In order to further illustrate this, let's take a look at some concrete examples. In all examples we'll use the same image built in the original [Example](#example).
+Try and see if you can correctly guess the output of the commands
 
-The solution depends on the options specified when starting the container. By default, the identity mapping is used, meaning the <mark>UID</mark>/<mark>GID</mark> inside the container matches the <mark>UID</mark>/<mark>GID</mark> outside. However, since you are root and have full control, you can configure any other mapping as wanted.
+### Rootful Default Mapping
+```shell
+[root@fedora ~]$ podman run --volume /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
+```
+```shell
+[root@fedora ~]$ ls -l /tmp/x
+-rw-r--r-- 1 1000 1000 0 Jan 31 23:45 /tmp/x
+```
+Since by default rootful containers use the identity mapping, it is expected that the user ID will stay the same.
 
-### Rootless Containers
-For rootless containers(containers run by a non-root user) the solution is a bit more involved since we don't have the <mark>CAP_SETUID</mark>/<mark>CAP_SETGID</mark>.
+### Rootful Custom Mapping
+```shell
+[root@fedora ~]$ podman run --uidmap=0:100000:65536 -v /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
+```
+For more information on \-\-uidmap, see [here](https://docs.podman.io/en/stable/markdown/podman-run.1.html#uidmap-flags-container-uid-from-uid-amount)
+```shell
+[root@fedora ~]$ ls -l /tmp/x
+-rw-r--r-- 1 101000 101000 0 Jan 31 23:45 /tmp/x
+```
+It is easy to see why the user ID is 101000 if we look at a table representation of the user ID mapping:
+| Container user ID | Host user ID   |
+| ------------- | ---------- |
+| 0             | 100000     |
+| 1             | 100001     |
+| 2             | 100002     |
+| . . .         | . . .      |
+| 1000          | 101000     |
+| . . .         | . . .      |
+| 65535         | 165535     |
 
-The solution depends on the options specified when starting the container, and the <mark>SubUID</mark>s/<mark>SubGID</mark>s configured by the system administrator for the user. By default, a one to one mapping is used, where the first <mark>UID</mark>/<mark>GID</mark> inside the container corresponds to the first <mark>SubUID</mark>/<mark>SubGID</mark>, and so on. However, you can configure any mapping you prefer, as long as each <mark>UID</mark>/<mark>GID</mark> inside the container is mapped to some <mark>SubUID</mark>/<mark>SubGID</mark>.
+However, why was the group ID 101000? We didn't use any group ID mapping, so it should have been 1000, shouldn't it?
+In these kinds of cases, where the user ID/group ID on host don't match our expectations, we should look at the <mark>/proc/\<pid\>/uid_map</mark> and <mark>/proc/\<pid\>/gid_map</mark> files:
+```shell
+[root@fedora ~]$ podman run --uidmap=0:100000:65536 -d --name rootful debian:bookworm-nonroot sleep infinity
+[root@fedora ~]$ cat /proc/$(podman inspect rootful | jq '.[0].State.Pid')/gid_map
+0     100000      65536
+```
+It seems that when \-\-gidmap isn't specified, then podman uses \-\-uidmap's value for it. Furthermore, running the same command but replacing \-\-uidmap with \-\-gidmap, shows that when \-\-uidmap isn't specified, then podman uses \-\-gidmap's value for it.
+
+### Rootless Default Mapping
+```shell
+[tomerh@fedora ~]$ cat /etc/subuid
+tomerh:100000:65536
+[tomerh@fedora ~]$ cat /etc/subgid
+tomerh:100000:65536
+[tomerh@fedora ~]$ id -u
+501
+[tomerh@fedora ~]$ podman run -v /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
+```
+
+```shell
+[root@fedora ~]$ ls -l /tmp/x
+-rw-r--r-- 1 100999 100999 0 Jan 31 23:45 /tmp/x
+```
+Huh, that's not what we were expecting. Shouldn't it have been 101000?
+
+Let's take a look at <mark>/proc/\<pid\>/uid_map</mark>:
+```shell
+[tomerh@fedora ~]$ podman run -d --name rootless debian:bookworm-nonroot sleep infinity
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
+0        501          1
+1     100000      65536
+```
+It seems that podman maps our user ID to the container's root user ID, and then maps all the other user IDs sequentially, according to our subuids and subgids. Since we skipped one user ID, instead of getting 101000, we got 100999.
+
+Looking at the documentation [here](https://docs.podman.io/en/latest/markdown/podman-run.1.html#userns-mode), we can see following lines:
+> If \-\-userns is not set, the default value is determined as follows.
+> * If \-\-pod is set, \-\-userns is ignored and the user namespace of the pod is used.
+> * If the environment variable PODMAN_USERNS is set its value is used.
+> * If userns is specified in containers.conf this value is used.
+> * Otherwise, \-\-userns=host is assumed.
+
+And below that there's the following table:
+| Key                     | Host user ID | Container user ID |
+| ----------------------- | -------- | ------------- |
+| auto                    | $user ID     | nil           |
+| host                    | $user ID     | 0             |
+| keep-id                 | $user ID     | $user ID          |
+| keep-id:uid=200,gid=210 | $user ID     | 200           |
+| nomap                   | $user ID     | nil           |
+
+Since none of the conditions in the list apply to us, \-\-userns=host is assumed, which means that our user ID is mapped to the root user ID, as seen in the table. If we want to change this, we'll have to pick another mode.
+
+### Rootless Custom Mapping
+Looking at the documentation, we'll want to pick either auto or nomap.
+> auto: Automatically create a unique user namespace. The users range from the /etc/subuid and /etc/subgid files will be used.
+>
+> nomap: Creates a user namespace where the current rootless user’s user ID:group ID are not mapped into the container.
+
+Let's try both, and see what the result is:
+```shell
+[tomerh@fedora ~]$ podman run --userns=auto -d --name rootless debian:bookworm-nonroot sleep infinity
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
+0     100000       1024
+```
+```shell
+[tomerh@fedora ~]$ podman run --userns=nomap -d --name rootless debian:bookworm-nonroot sleep infinity
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
+0     100000      65536
+```
+It seems that the difference between \-\-userns=nomap and a \-\-userns=auto is the default size of the mapping. However, while \-\-userns=nomap isn't configurable, \-\-userns=auto is, and they can be made identical by using \-\-userns=auto:size=65536.
+
+This can be seen when looking at the output of the [The Question](#the-question):
+```shell
+[tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=auto debian:bookworm-nonroot touch /tmp/auto
+[tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=auto:size=65536 debian:bookworm-nonroot touch /tmp/auto-size
+[tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=nomapo debian:bookworm-nonroot touch /tmp/nomap
+[tomerh@fedora ~]$ ls -la /tmp/{auto,nomap}
+-rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/auto
+-rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/auto-size
+-rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/nomap
+```
+
+Unfortunately, unlike [Rootful Custom Mapping](#rootful-custom-mapping), we can't use \-\-uidmap to achieve the same result.
+```shell
+[tomerh@fedora ~]$ podman run --uidmap=0:0:65536 -d --name rootless debian:bookworm-nonroot sleep infinity
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
+0        501          1
+0     100000      65535
+```
+Using \-\-uidmap while rootless will cause podman to automatically map our user ID to the container's root user ID. This can be the subject of a full blog post, so I won't go into it, but you can read more about why [here](https://docs.podman.io/en/latest/markdown/podman-run.1.html#uidmap-flags-container-uid-from-uid-amount)
+
 
 [^1]: https://docs.redhat.com/en/documentation/red_hat_enterprise_linux_atomic_host/7/html/overview_of_containers_in_red_hat_systems/introduction_to_linux_containers#overview
 [^2]: https://man7.org/linux/man-pages/man7/namespaces.7.html
