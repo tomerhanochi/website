@@ -87,6 +87,7 @@ In this case, if a process running under a user with user ID 2, using the above 
 
 However, you don't have to use the default mapping. user ID/group ID mappings can be modified through the files <mark>/proc/\<pid\>/uid_map</mark> and <mark>/proc/\<pid\>/gid_map</mark>.
 
+<a name="uid_map"></a>
 In these files, each line is of the following format:
 ```plaintext
 <starting-namespace-uid/gid> <starting-host-uid/gid> <count>
@@ -98,7 +99,7 @@ Each line gives a range of consecutive user IDs/group IDs to map from within the
 
 Results in the following mapping between user IDs in the namespace to the host:
 
-| Namespace user ID | Host user ID |
+| Namespace UID | Host UID |
 | ------------- | -------- |
 | 0             | 1000     |
 | 1             | 1001     |
@@ -139,9 +140,9 @@ The above is the only valid value that can be written to a process's <mark>uid_m
 If I don't have the required capabilties, I can only modify a process's <mark>uid_map</mark>/<mark>gid_map</mark> with the above values if I was the one that created its namespace.
 
 ### subuids and subgids
-Due to these heavy restrictions, and the need to avoid vulnerabilities by ensuring that every user ID/group ID in the namespace is mapped to a non-root user ID/group ID, container engines like podman came up with a mechanism called subuids/subgids.
+Due to these heavy restrictions, and the need to avoid vulnerabilities by ensuring that every user ID/group ID in the namespace is mapped to a non-root user ID/group ID, container engines like podman came up with a mechanism called subuids and subgids.
 
-subuids/subgids allow for the system administrator to delegate user ID/group ID ranges to a non-root user. This enables the non-root user to map more than 1 user ID/group ID from the namespace, even though they don't have the CAP_SETUID/CAP_SETGID capabilities.
+subuids and subgids allow for the system administrator to delegate user ID/group ID ranges to a non-root user. This enables the non-root user to map more than 1 user ID/group ID from the namespace, even though they don't have the CAP_SETUID/CAP_SETGID capabilities.
 
 These are configured using the files <mark>/etc/subuid</mark> and <mark>/etc/subgid</mark>, in which each line has the following format:
 ```plaintext
@@ -172,7 +173,7 @@ Container engines utilize 2 binaries called <mark>newuidmap</mark>/<mark>newgidm
 Now that we covered the background required, we can revisit [The Question](#the-question).
 As we've discussed previously, we know that in all possible cases, there is some kind of user ID mapping. Whether it is the identity mapping as is the default when running rootful, or some other mapping configured by the system administrator/container engine.
 
-In order to further illustrate this, let's take a look at some concrete examples. In all examples we'll use the same image built in the original [Example](#example).
+In order to further illustrate this, we'll try some concrete examples. In all examples we'll use the same image built in the original [Example](#example).
 Try and see if you can correctly guess the output of the commands
 
 ### Rootful Default Mapping
@@ -189,13 +190,13 @@ Since by default rootful containers use the identity mapping, it is expected tha
 ```shell
 [root@fedora ~]$ podman run --uidmap=0:100000:65536 -v /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
 ```
-For more information on \-\-uidmap, see [here](https://docs.podman.io/en/stable/markdown/podman-run.1.html#uidmap-flags-container-uid-from-uid-amount)
+The option <mark>--uidmap</mark> receives the same paramters as [<mark>uid_map</mark>](#uid_map) except delimited by colons and not whitespace.
 ```shell
 [root@fedora ~]$ ls -l /tmp/x
 -rw-r--r-- 1 101000 101000 0 Jan 31 23:45 /tmp/x
 ```
 It is easy to see why the user ID is 101000 if we look at a table representation of the user ID mapping:
-| Container user ID | Host user ID   |
+| Container UID | Host UID   |
 | ------------- | ---------- |
 | 0             | 100000     |
 | 1             | 100001     |
@@ -212,7 +213,7 @@ In these kinds of cases, where the user ID/group ID on host don't match our expe
 [root@fedora ~]$ cat /proc/$(podman inspect rootful | jq '.[0].State.Pid')/gid_map
 0     100000      65536
 ```
-It seems that when \-\-gidmap isn't specified, then podman uses \-\-uidmap's value for it. Furthermore, running the same command but replacing \-\-uidmap with \-\-gidmap, shows that when \-\-uidmap isn't specified, then podman uses \-\-gidmap's value for it.
+When <mark>\-\-gidmap</mark> isn't specified, podman uses <mark>\-\-uidmap</mark>'s value for it. The opposite is true as well, when <mark>\-\-uidmap</mark> isn't specified, podman uses <mark>\-\-gidmap</mark>'s value for it.
 
 ### Rootless Default Mapping
 ```shell
@@ -229,7 +230,7 @@ tomerh:100000:65536
 [root@fedora ~]$ ls -l /tmp/x
 -rw-r--r-- 1 100999 100999 0 Jan 31 23:45 /tmp/x
 ```
-Huh, that's not what we were expecting. Shouldn't it have been 101000?
+Huh, that's not what I was expecting. Shouldn't it have been 101000?
 
 Let's take a look at <mark>/proc/\<pid\>/uid_map</mark>:
 ```shell
@@ -238,33 +239,46 @@ Let's take a look at <mark>/proc/\<pid\>/uid_map</mark>:
 0        501          1
 1     100000      65536
 ```
-It seems that podman maps our user ID to the container's root user ID, and then maps all the other user IDs sequentially, according to our subuids and subgids. Since we skipped one user ID, instead of getting 101000, we got 100999.
+Podman maps our user ID to the container's root user ID, and then maps all the other user IDs sequentially, according to our subuids and subgids. So the following mapping was used:
+| Container UID | Host UID   |
+| ------------- | ---------- |
+| 0             | 501        |
+| 1             | 100000     |
+| 2             | 100001     |
+| . . .         | . . .      |
+| 1000          | 100999     |
+| . . .         | . . .      |
+| 65535         | 165534     |
+And that's why the command showed 100999 instead of 101000. That still doesn't answer, why podman maps our user ID into the container. Taking a look at the documentation, the following section appears relevant:
 
-Looking at the documentation [here](https://docs.podman.io/en/latest/markdown/podman-run.1.html#userns-mode), we can see following lines:
-> If \-\-userns is not set, the default value is determined as follows.
-> * If \-\-pod is set, \-\-userns is ignored and the user namespace of the pod is used.
+> If <mark>\-\-userns</mark> is not set, the default value is determined as follows.
+> * If <mark>\-\-pod</mark> is set, <mark>\-\-userns</mark> is ignored and the user namespace of the pod is used.
 > * If the environment variable PODMAN_USERNS is set its value is used.
 > * If userns is specified in containers.conf this value is used.
-> * Otherwise, \-\-userns=host is assumed.
+> * Otherwise, <mark>\-\-userns=host</mark> is assumed.
+>
+> <cite>userns-mode - Podman Docs[^5]</cite>
 
-And below that there's the following table:
-| Key                     | Host user ID | Container user ID |
+And below that there's the following table, including all the possible values of <mark>--userns</mark>, and what mapping they use for the user's user ID:
+| Key                     | Host UID | Container UID |
 | ----------------------- | -------- | ------------- |
-| auto                    | $user ID     | nil           |
-| host                    | $user ID     | 0             |
-| keep-id                 | $user ID     | $user ID          |
-| keep-id:uid=200,gid=210 | $user ID     | 200           |
-| nomap                   | $user ID     | nil           |
+| auto                    | $UID     | nil           |
+| host                    | $UID     | 0             |
+| keep-id                 | $UID     | $UID          |
+| keep-id:uid=200,gid=210 | $UID     | 200           |
+| nomap                   | $UID     | nil           |
 
-Since none of the conditions in the list apply to us, \-\-userns=host is assumed, which means that our user ID is mapped to the root user ID, as seen in the table. If we want to change this, we'll have to pick another mode.
+Since none of the conditions in the list apply to us, <mark>\-\-userns=host</mark> is assumed, which means that our user ID is mapped to the root user ID, as seen in the table. If we want to change this, we'll have to pick another mode.
 
 ### Rootless Custom Mapping
-Looking at the documentation, we'll want to pick either auto or nomap.
+The table points us in the direction of either <mark>\-\-userns=auto</mark> or <mark>\-\-userns=nomap</mark>:
 > auto: Automatically create a unique user namespace. The users range from the /etc/subuid and /etc/subgid files will be used.
 >
-> nomap: Creates a user namespace where the current rootless user’s user ID:group ID are not mapped into the container.
+> nomap: Creates a user namespace where the current rootless user’s user ID and group ID are not mapped into the container.
+>
+> <cite>userns-mode - Podman Docs[^5]</cite>
 
-Let's try both, and see what the result is:
+From their description I'd wager we want to use <mark>auto</mark>, but let's try both and see how they're different:
 ```shell
 [tomerh@fedora ~]$ podman run --userns=auto -d --name rootless debian:bookworm-nonroot sleep infinity
 [tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
@@ -275,30 +289,35 @@ Let's try both, and see what the result is:
 [tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
 0     100000      65536
 ```
-It seems that the difference between \-\-userns=nomap and a \-\-userns=auto is the default size of the mapping. However, while \-\-userns=nomap isn't configurable, \-\-userns=auto is, and they can be made identical by using \-\-userns=auto:size=65536.
+The difference between <mark>\-\-userns=nomap</mark> and <mark>\-\-userns=auto</mark> is the default size of the mapping. While <mark>\-\-userns=nomap</mark> uses all available subuids and subgids, <mark>\-\-userns=auto</mark> tries to use only as much as needed. In addition, while <mark>\-\-userns=nomap</mark> isn't configurable, <mark>\-\-userns=auto</mark> is. Interestingly, in our case they can be made identical by using <mark>\-\-userns=auto:size=65536</mark>.
 
-This can be seen when looking at the output of the [The Question](#the-question):
+When checking the result of our [Question](#the-question) with each of the above options, we can see that the results are the same:
 ```shell
 [tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=auto debian:bookworm-nonroot touch /tmp/auto
 [tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=auto:size=65536 debian:bookworm-nonroot touch /tmp/auto-size
 [tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=nomapo debian:bookworm-nonroot touch /tmp/nomap
-[tomerh@fedora ~]$ ls -la /tmp/{auto,nomap}
+[tomerh@fedora ~]$ ls -la /tmp/{auto,auto-size,nomap}
 -rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/auto
 -rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/auto-size
 -rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/nomap
 ```
 
-Unfortunately, unlike [Rootful Custom Mapping](#rootful-custom-mapping), we can't use \-\-uidmap to achieve the same result.
+Unfortunately, unlike [Rootful Custom Mapping](#rootful-custom-mapping), we can't use <mark>\-\-uidmap</mark> to achieve the same result:
 ```shell
 [tomerh@fedora ~]$ podman run --uidmap=0:0:65536 -d --name rootless debian:bookworm-nonroot sleep infinity
 [tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
 0        501          1
 0     100000      65535
 ```
-Using \-\-uidmap while rootless will cause podman to automatically map our user ID to the container's root user ID. This can be the subject of a full blog post, so I won't go into it, but you can read more about why [here](https://docs.podman.io/en/latest/markdown/podman-run.1.html#uidmap-flags-container-uid-from-uid-amount)
+Using <mark>\-\-uidmap</mark> while rootless will cause podman to automatically map our user ID to the container's root user ID. This can be the subject of a full blog post, so I won't go into it, but you can read more about why [here](https://docs.podman.io/en/latest/markdown/podman-run.1.html#uidmap-flags-container-uid-from-uid-amount).
 
+## Conclusion
+As can be seen from the numerous examples we've covered, even when knowing the background it is hard to predict what user and group ID will actually be used when creating files inside containers, especially so with rootless containers, due to idiosyncrasies in the various container engines.
+
+Fortunately, it is very easy to check what mapping is used, so if you encounter any issues with user and group IDs of files on the host created by a container not matching what you expect, remember to check the <mark>uid_map</mark>/<mark>gid_map</mark>!
 
 [^1]: https://docs.redhat.com/en/documentation/red_hat_enterprise_linux_atomic_host/7/html/overview_of_containers_in_red_hat_systems/introduction_to_linux_containers#overview
 [^2]: https://man7.org/linux/man-pages/man7/namespaces.7.html
 [^3]: https://man7.org/linux/man-pages/man7/user_namespaces.7.html
 [^4]: https://man7.org/linux/man-pages/man7/capabilities.7.html
+[^5]: https://docs.podman.io/en/latest/markdown/podman-run.1.html#userns-mode
