@@ -180,17 +180,20 @@ Try and see if you can correctly guess the output of the commands
 ```shell
 [root@fedora ~]$ podman run --volume /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
 ```
+{{<details summary="Output">}}
 ```shell
 [root@fedora ~]$ ls -l /tmp/x
 -rw-r--r-- 1 1000 1000 0 Jan 31 23:45 /tmp/x
 ```
 Since by default rootful containers use the identity mapping, it is expected that the user ID will stay the same.
+{{</details>}}
 
 ### Rootful Custom Mapping
 ```shell
 [root@fedora ~]$ podman run --uidmap=0:100000:65536 -v /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
 ```
-The option <mark>--uidmap</mark> receives the same paramters as [<mark>uid_map</mark>](#uid_map) except delimited by colons and not whitespace.
+The option <mark>\-\-uidmap</mark> receives the same paramters as [<mark>uid_map</mark>](#uid_map) except delimited by colons and not whitespace.
+{{<details summary="Output">}}
 ```shell
 [root@fedora ~]$ ls -l /tmp/x
 -rw-r--r-- 1 101000 101000 0 Jan 31 23:45 /tmp/x
@@ -214,6 +217,7 @@ In these kinds of cases, where the user ID/group ID on host don't match our expe
 0     100000      65536
 ```
 When <mark>\-\-gidmap</mark> isn't specified, podman uses <mark>\-\-uidmap</mark>'s value for it. The opposite is true as well, when <mark>\-\-uidmap</mark> isn't specified, podman uses <mark>\-\-gidmap</mark>'s value for it.
+{{</details>}}
 
 ### Rootless Default Mapping
 ```shell
@@ -226,6 +230,7 @@ tomerh:100000:65536
 [tomerh@fedora ~]$ podman run -v /tmp:/tmp debian:bookworm-nonroot touch /tmp/x
 ```
 
+{{<details summary="Output">}}
 ```shell
 [root@fedora ~]$ ls -l /tmp/x
 -rw-r--r-- 1 100999 100999 0 Jan 31 23:45 /tmp/x
@@ -235,7 +240,7 @@ Huh, that's not what I was expecting. Shouldn't it have been 101000?
 Let's take a look at <mark>/proc/\<pid\>/uid_map</mark>:
 ```shell
 [tomerh@fedora ~]$ podman run -d --name rootless debian:bookworm-nonroot sleep infinity
-[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/uid_map
 0        501          1
 1     100000      65536
 ```
@@ -249,7 +254,8 @@ Podman maps our user ID to the container's root user ID, and then maps all the o
 | 1000          | 100999     |
 | . . .         | . . .      |
 | 65535         | 165534     |
-And that's why the command showed 100999 instead of 101000. That still doesn't answer, why podman maps our user ID into the container. Taking a look at the documentation, the following section appears relevant:
+
+And that's why the command showed 100999 instead of 101000. That still doesn't answer why podman maps our user ID into the container. Taking a look at the documentation, the following section appears relevant:
 
 > If <mark>\-\-userns</mark> is not set, the default value is determined as follows.
 > * If <mark>\-\-pod</mark> is set, <mark>\-\-userns</mark> is ignored and the user namespace of the pod is used.
@@ -259,7 +265,7 @@ And that's why the command showed 100999 instead of 101000. That still doesn't a
 >
 > <cite>userns-mode - Podman Docs[^5]</cite>
 
-And below that there's the following table, including all the possible values of <mark>--userns</mark>, and what mapping they use for the user's user ID:
+And below that there's the following table, including all the possible values of <mark>\-\-userns</mark>, and what mapping they use for the user's user ID:
 | Key                     | Host UID | Container UID |
 | ----------------------- | -------- | ------------- |
 | auto                    | $UID     | nil           |
@@ -269,9 +275,55 @@ And below that there's the following table, including all the possible values of
 | nomap                   | $UID     | nil           |
 
 Since none of the conditions in the list apply to us, <mark>\-\-userns=host</mark> is assumed, which means that our user ID is mapped to the root user ID, as seen in the table. If we want to change this, we'll have to pick another mode.
+{{</details>}}
 
 ### Rootless Custom Mapping
-The table points us in the direction of either <mark>\-\-userns=auto</mark> or <mark>\-\-userns=nomap</mark>:
+```shell
+[tomerh@fedora ~]$ cat /etc/subuid
+tomerh:100000:65536
+[tomerh@fedora ~]$ cat /etc/subgid
+tomerh:100000:65536
+[tomerh@fedora ~]$ id -u
+501
+[tomerh@fedora ~]$ podman run --uidmap=0:0:65536 -d --name rootless debian:bookworm-nonroot sleep infinity
+```
+{{<details summary="Output">}}
+```shell
+[root@fedora ~]$ ls -l /tmp/x
+-rw-r--r-- 1 100999 100999 0 Jan 31 23:45 /tmp/x
+```
+Rather unexpectedly, using <mark>\-\-uidmap</mark> doesn't actually change the mapping podman uses compared to the [Rootless Default Mapping](#rootless-default-mapping), as can be seen in the <mark>uid_map</mark>:
+```shell
+[tomerh@fedora ~]$ podman run --uidmap=0:0:65536 -d --name rootless debian:bookworm-nonroot sleep infinity
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/uid_map
+0        501          1
+0     100000      65535
+```
+If you have a keen eye, you may have noticed that I used <mark>\-\-uidmap=0:0:65536</mark> and not <mark>\-\-uidmap=0:100000:65536</mark>. This is because in rootless mode, podman seperates the user and group ID mapping into 2 steps, that look like this:
+
+| Container UID | Intermediate UID | Host UID |
+| ------------- | ---------------- | -------- |
+| 0             | 0                | 501      |
+| 1             | 1                | 100000   |
+| 2             | 2                | 100001   |
+| . . .         | . . .            | . . .    |
+| 1000          | 1000             | 100999   |
+| . . .         | . . .            | . . .    |
+| 65535         | 65535            | 165534   |
+
+And these mapping steps can be controlled independently:
+1. <mark>\-\-uidmap</mark>(and <mark>\-\-gidmap</mark>), which can be used to control the mapping between the container user ID and the intermediate user ID. That is the reason we used <mark>0:0:65536</mark> and not <mark>0:100000:65536</mark>, since we want to map the 0th container user ID to the 0th intermediate user ID, etc.
+2. <mark>\-\-userns</mark>, which can be used to control the mapping between the intermediate user ID and the host user ID.
+
+As I mentioned in [Rootless Default Mapping](#rootless-default-mapping), <mark>\-\-userns=host</mark> is used by default, which causes this mapping:
+
+| Intermediate UID | Host UID |
+| ---------------- | -------- |
+| 0                | 501      |
+
+In order to keep that from happening, we must change our <mark>\-\-userns</mark> mode.
+
+The table in the [Rootless Default Mapping](#rootless-default-mapping) points us in the direction of either <mark>\-\-userns=auto</mark> or <mark>\-\-userns=nomap</mark>:
 > auto: Automatically create a unique user namespace. The users range from the /etc/subuid and /etc/subgid files will be used.
 >
 > nomap: Creates a user namespace where the current rootless user’s user ID and group ID are not mapped into the container.
@@ -281,12 +333,12 @@ The table points us in the direction of either <mark>\-\-userns=auto</mark> or <
 From their description I'd wager we want to use <mark>auto</mark>, but let's try both and see how they're different:
 ```shell
 [tomerh@fedora ~]$ podman run --userns=auto -d --name rootless debian:bookworm-nonroot sleep infinity
-[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/uid_map
 0     100000       1024
 ```
 ```shell
 [tomerh@fedora ~]$ podman run --userns=nomap -d --name rootless debian:bookworm-nonroot sleep infinity
-[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
+[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/uid_map
 0     100000      65536
 ```
 The difference between <mark>\-\-userns=nomap</mark> and <mark>\-\-userns=auto</mark> is the default size of the mapping. While <mark>\-\-userns=nomap</mark> uses all available subuids and subgids, <mark>\-\-userns=auto</mark> tries to use only as much as needed. In addition, while <mark>\-\-userns=nomap</mark> isn't configurable, <mark>\-\-userns=auto</mark> is. Interestingly, in our case they can be made identical by using <mark>\-\-userns=auto:size=65536</mark>.
@@ -295,21 +347,13 @@ When checking the result of our [Question](#the-question) with each of the above
 ```shell
 [tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=auto debian:bookworm-nonroot touch /tmp/auto
 [tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=auto:size=65536 debian:bookworm-nonroot touch /tmp/auto-size
-[tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=nomapo debian:bookworm-nonroot touch /tmp/nomap
+[tomerh@fedora ~]$ podman run --rm -v /tmp:/tmp --userns=nomap debian:bookworm-nonroot touch /tmp/nomap
 [tomerh@fedora ~]$ ls -la /tmp/{auto,auto-size,nomap}
 -rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/auto
 -rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/auto-size
 -rw-r--r-- 1 101000 101000 0 Feb  7 13:11 /tmp/nomap
 ```
-
-Unfortunately, unlike [Rootful Custom Mapping](#rootful-custom-mapping), we can't use <mark>\-\-uidmap</mark> to achieve the same result:
-```shell
-[tomerh@fedora ~]$ podman run --uidmap=0:0:65536 -d --name rootless debian:bookworm-nonroot sleep infinity
-[tomerh@fedora ~]$ cat /proc/$(podman inspect rootless | jq '.[0].State.Pid')/gid_map
-0        501          1
-0     100000      65535
-```
-Using <mark>\-\-uidmap</mark> while rootless will cause podman to automatically map our user ID to the container's root user ID. This can be the subject of a full blog post, so I won't go into it, but you can read more about why [here](https://docs.podman.io/en/latest/markdown/podman-run.1.html#uidmap-flags-container-uid-from-uid-amount).
+{{</details>}}
 
 ## Conclusion
 As can be seen from the numerous examples we've covered, even when knowing the background it is hard to predict what user and group ID will actually be used when creating files inside containers, especially so with rootless containers, due to idiosyncrasies in the various container engines.
