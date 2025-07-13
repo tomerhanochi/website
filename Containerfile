@@ -14,4 +14,4 @@ USER hugo
 COPY --chown=hugo:hugo hugo/ .
 COPY --from=typst --chown=hugo:hugo /tmp/resume.pdf ./public/resume.pdf
 
-RUN hugo --gc --minify --baseURL ${HUGO_BASE_URL}
+RUN hugo --gc --minify --baseURL ${BASE_URL}
