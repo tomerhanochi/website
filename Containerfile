@@ -9,8 +9,6 @@ FROM ghcr.io/gohugoio/hugo:v0.148.1 AS hugo
 
 ARG BASE_URL
 
-USER hugo
-
 COPY --chown=hugo:hugo hugo/ .
 COPY --from=typst --chown=hugo:hugo /tmp/resume.pdf ./public/resume.pdf
 
