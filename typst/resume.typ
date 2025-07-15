@@ -250,7 +250,7 @@ management, storage and networking.
 
 Fast learner who loves his job, highly disciplined, team player, working
 closely with dev teams and cyber researchers, strong problem solving
-and debugging, rich presentation, teaching and guidance skiils.
+and debugging, rich presentation, teaching and guidance skills.
 
 == Work Experience
 
