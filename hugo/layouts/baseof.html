@@ -13,6 +13,30 @@
         {{ .Site.Title | markdownify }}
       </h1>
     </header>
+    <hr>
+    <nav>
+      <ul>
+        <li>
+          <a href="{{ site.BaseURL }}">
+            Home
+          </a>
+        </li>
+        {{ range site.Sections }}
+        <li>
+          <a href="{{ .RelPermalink }}">
+            {{ .Title | markdownify }}
+          </a>
+        </li>
+        {{ end }}
+        <li>
+          {{ $resume := resources.Get "pdf/resume.pdf" | resources.Fingerprint }}
+          <a href="{{ $resume.Permalink }}">
+            Resume
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <hr>
     <main>
       {{ block "main" . }}{{ end }}
     <main>

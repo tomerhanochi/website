@@ -1,7 +1,6 @@
 +++
 title = "A Tale of Container UIDs"
 date = "2025-01-31"
-description = "A deep dive into what affects the user ID of a file on the host created by a container."
 toc = true
 +++
 

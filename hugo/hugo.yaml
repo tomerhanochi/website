@@ -1,6 +1,8 @@
 baseurl: "https://tomerhanochi.com/"
 title: "Tomer Hanochi's Blog"
 
+enableRobotsTXT: true
+
 markup:
   highlight:
     style: onedark
