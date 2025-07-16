@@ -29,3 +29,5 @@ RUN hugo build --gc --minify
 FROM scratch AS website
 
 COPY --from=hugo /project/public /public
+
+CMD ["placeholder"]
