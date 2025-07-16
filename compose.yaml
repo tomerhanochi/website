@@ -1,0 +1,23 @@
+services:
+  website:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: hugo
+    entrypoint:
+      - /usr/bin/hugo
+    command:
+      - server
+      - --bind
+      - 0.0.0.0
+    develop:
+      watch:
+        - action: sync
+          path: ./hugo
+          target: /project
+        - action: rebuild
+          path: ./typst
+        - action: rebuild
+          path: ./Containerfile
+    ports:
+      - 1313:1313
