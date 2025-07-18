@@ -135,35 +135,6 @@
   start-date + " " + $dash.em$ + " " + end-date
 }
 
-// Section components below
-#let edu(
-  institution: "",
-  dates: "",
-  degree: "",
-  gpa: "",
-  location: "",
-  // Makes dates on upper right like rest of components
-  consistent: false,
-) = {
-  if consistent {
-    // edu-constant style (dates top-right, location bottom-right)
-    generic-two-by-two(
-      top-left: strong(institution),
-      top-right: dates,
-      bottom-left: emph(degree),
-      bottom-right: emph(location),
-    )
-  } else {
-    // original edu style (location top-right, dates bottom-right)
-    generic-two-by-two(
-      top-left: strong(institution),
-      top-right: location,
-      bottom-left: emph(degree),
-      bottom-right: emph(dates),
-    )
-  }
-}
-
 #let work(
   title: "",
   dates: "",
@@ -217,23 +188,12 @@
   ]
 }
 
-#let extracurriculars(
-  activity: "",
-  dates: "",
-) = {
-  generic-one-by-two(
-    left: strong(activity),
-    right: dates,
-  )
-}
-
 #show: resume.with(
   author: "Tomer Hanochi",
-  location: "Kfar Saba, Israel",
   email: "contact@tomerhanochi.com",
   github: "github.com/tomerhanochi",
-  phone: "054-549-4587",
-  personal-site: "tomerhanochi.com",
+  phone: "(+972) 54-549-4587",
+  linkedin: "linkedin.com/in/tomer-hanochi",
   accent-color: "#26428b",
   font: "New Computer Modern",
   paper: "us-letter",
@@ -242,28 +202,20 @@
 )
 
 == Profile
-Passionate engineer with 4 years of hands-on experience in architecture,
-development and maintenance of large scale on-prem & public cloud
-native platforms and services. Expertise in various fields - CI-CD, GitOps,
-containers and orchestration, automations, observability, identity
-management, storage and networking.
+Software Engineer with 4+ years of experience building scalable backend systems and cloud-native applications. Proficient in Python, Go, and Rust with hands-on experience developing microservices, automating infrastructure, and implementing CI/CD pipelines.
 
-Fast learner who loves his job, highly disciplined, team player, working
-closely with dev teams and cyber researchers, strong problem solving
-and debugging, rich presentation, teaching and guidance skills.
+Strong background in cloud platforms (AWS), containerization (Docker, Kubernetes), and database design. Passionate about writing clean, efficient code and collaborating with cross-functional teams to deliver reliable software solutions.
 
 == Work Experience
-
 #work(
   title: "DevOps & Platform Engineer",
   location: "Rishon Lezion, Israel",
   company: "IDF - Matzov",
   dates: dates-helper(start-date: "Aug 2023", end-date: "Nov 2025"),
 )
-- Developed comprehensive Ansible automation suite including custom roles and modules for VM lifecycle management, multi-site HA DNS systems, global load balancers, and DHCP infrastructure, reducing manual deployment time by eliminating repetitive tasks.
-- Architected and automated Splunk-as-a-Service platform delivering isolated, single-tenant SIEM clusters to external clients, enabling scalable security information and event management across distributed environments.
-- Orchestrated automated deployment and GitOps management of 20+ OpenShift Container Platform clusters, ensuring consistent infrastructure provisioning and configuration management across enterprise environments
-- Designed DNS naming conventions and routing strategies to support both active-active and active-passive application deployment patterns, facilitating flexible deployment architectures for development teams
+- Eliminated manual deployment tasks by designing and implementing a comprehensive Ansible automation suite with custom roles and modules, to automate infrastructure provisioning.
+- Architected Splunk-as-a-Service platform delivering isolated multi-site and highly available clusters to numerous external clients.
+- Designed DNS naming conventions and routing strategies supporting multi-site active-active and active-passive deployment patterns.
 
 #work(
   title: "Junior Software Engineer",
@@ -271,12 +223,11 @@ and debugging, rich presentation, teaching and guidance skills.
   company: "Seemplicity Security",
   dates: dates-helper(start-date: "Jun 2021", end-date: "Feb 2023"),
 )
-- Developed microservice for automated vulnerability-to-team assignment using data-driven algorithms, enhancing security remediation workflows and reducing mean time to resolution.
-- Created intelligent developer tooling script enabling selective microservice execution for local debugging, later integrated into CI/CD pipeline to support independent component testing and faster feedback loops.
-- Built polyglot build system supporting multiple programming languages within monorepo architecture, streamlining development workflows and improving build consistency across diverse codebases.
+- Developed microservice for automated vulnerability-to-team assignment using data-driven algorithms.
+- Created developer tooling enabling selective microservice execution for local debugging, later integrated into CI/CD pipeline for end to end tests.
+- Built polyglot build system supporting multiple languages within the organization's monorepo.
 
 == Achievements
-
 #certificates(
   name: "Certificate of Excellence",
   issuer: "IDF - Matzov",
@@ -284,24 +235,28 @@ and debugging, rich presentation, teaching and guidance skills.
 )
 - Due to outstanding technical contributions and platform engineering achievements.
 
-== Education
-
-#edu(
-  institution: "Rabin High School",
-  location: "Kfar Saba, Israel",
-  dates: dates-helper(start-date: "Sep 2019", end-date: "Jun 2022"),
-  degree: "Specialized in Computer Science, Artificial Intelligence & Physics",
-  consistent: true,
+== Projects
+#project(
+  name: "libsubid",
+  url: "github.com/tomerhanochi/libsubid"
 )
-- Developed custom neural network trained via genetic algorithm in Python to autonomously play Tetris, creating both headless and GUI implementations that achieved continuous gameplay without failure, recognized as exemplary capstone project standard.
+
+Built Rust-based dynamic library to automatically assign subuid/subgid ranges to non-root users, solving manual subuid/subgid mapping for rootless containerized environments.
+
+#project(
+  name: "pytris",
+  url: "github.com/tomerhanochi/pytris"
+)
+
+Developed custom neural network trained via genetic algorithm in Python to autonomously play Tetris, creating both headless and GUI implementations that achieved continuous gameplay without failure.
 
 == Skills
-- Programming - Python, Go, Rust
-- Cloud - AWS ECS, S3, VPC
+- Programming - Python, Go, Rust, Bash
+- Cloud - AWS ECS, S3, Lambda
+- Backend Development - REST, gRPC, Microservices Architecture
+- Systems & Networking - Linux, TCP/UDP, DNS, HTTP/HTTPS
+- Databases - PostgreSQL, MySQL, Redis
 - Containerization - OCI, Docker, Kubernetes, OpenShift
-- Databases - PostgreSQL, MySQL
-- Version Control - Git, GitHub, GitLab
-- CI/CD - GitHub Workflows, GitLab CI
-- Observability - Prometheus, Grafana, OpenTelemtry, Elasticsearch
+- Version Control & CI/CD - Git, GitHub Workflows, GitLab CI
+- Observability - Prometheus, Grafana, OpenTelemetry, Elasticsearch
 - Authentication/Authorization - SAML, OIDC, OAuth
-- Infrastructure as Code - Terraform, Ansible, ArgoCD
