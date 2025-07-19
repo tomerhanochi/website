@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ .Site.Title }}</title>
-    {{ $stylesheet := resources.Get "css/style.css" | resources.Minify | resources.Fingerprint }}
+    {{ $stylesheet := resources.Match "css/*" | resources.Concat "css/stylesheet.css" | resources.Minify | resources.Fingerprint }}
     <link rel="stylesheet" href="{{ $stylesheet.Permalink }}" integrity="{{ $stylesheet.Data.Integrity }}" />
   </head>
   <body>

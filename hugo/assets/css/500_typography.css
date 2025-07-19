@@ -1,0 +1,83 @@
+:root {
+  /* Display */
+  --typescale-display-large-font: "Roboto Mono", sans-serif;
+  --typescale-display-large-line-height: 4rem; /* 64px */
+  --typescale-display-large-size: 3.5625rem; /* 57px */
+  --typescale-display-large-weight: 400;
+
+  --typescale-display-medium-font: "Roboto Mono", sans-serif;
+  --typescale-display-medium-line-height: 3.25rem; /* 52px */
+  --typescale-display-medium-size: 2.8125rem; /* 45px */
+  --typescale-display-medium-weight: 400;
+
+  --typescale-display-small-font: "Roboto Mono", sans-serif;
+  --typescale-display-small-line-height: 2.75rem; /* 44px */
+  --typescale-display-small-size: 2.25rem; /* 36px */
+  --typescale-display-small-weight: 400;
+
+  /* Headline */
+  --typescale-headline-large-font: "Roboto Mono", sans-serif;
+  --typescale-headline-large-line-height: 2.5rem; /* 40px */
+  --typescale-headline-large-size: 2rem; /* 32px */
+  --typescale-headline-large-weight: 400;
+
+  --typescale-headline-medium-font: "Roboto Mono", sans-serif;
+  --typescale-headline-medium-line-height: 2rem; /* 32px */
+  --typescale-headline-medium-size: 1.75rem; /* 28px */
+  --typescale-headline-medium-weight: 400;
+
+  --typescale-headline-small-font: "Roboto Mono", sans-serif;
+  --typescale-headline-small-line-height: 1.75rem; /* 28px */
+  --typescale-headline-small-size: 1.5rem; /* 24px */
+  --typescale-headline-small-weight: 400;
+
+  /* Titles */
+  --typescale-title-large-font: "Roboto Mono", sans-serif;
+  --typescale-title-large-line-height: 2rem; /* 32px */
+  --typescale-title-large-size: 1.375rem; /* 22px */
+  --typescale-title-large-weight: 400;
+
+  --typescale-title-medium-font: "Roboto Mono", sans-serif;
+  --typescale-title-medium-line-height: 1.75rem; /* 28px */
+  --typescale-title-medium-size: 1.25rem; /* 20px */
+  --typescale-title-medium-weight: 500;
+
+  --typescale-title-small-font: "Roboto Mono", sans-serif;
+  --typescale-title-small-line-height: 1.5rem; /* 24px */
+  --typescale-title-small-size: 1rem; /* 16px */
+  --typescale-title-small-weight: 500;
+
+  /* Body */
+  --typescale-body-large-font: "Roboto Mono", sans-serif;
+  --typescale-body-large-line-height: 1.5rem; /* 24px */
+  --typescale-body-large-size: 0.875rem; /* 14px */
+  --typescale-body-large-weight: 400;
+
+  --typescale-body-medium-font: "Roboto Mono", sans-serif;
+  --typescale-body-medium-line-height: 1.25rem; /* 20px */
+  --typescale-body-medium-size: 0.875rem; /* 14px */
+  --typescale-body-medium-weight: 400;
+
+  --typescale-body-small-font: "Roboto Mono", sans-serif;
+  --typescale-body-small-line-height: 1rem; /* 16px */
+  --typescale-body-small-size: 0.75rem; /* 12px */
+  --typescale-body-small-weight: 400;
+
+  /* Labels */
+  --typescale-label-large-font: "Roboto Mono", sans-serif;
+  --typescale-label-large-line-height: 1.25rem; /* 20px */
+  --typescale-label-large-size: 0.875rem; /* 14px */
+  --typescale-label-large-weight: 500;
+  --typescale-label-large-weight-prominent: 600;
+
+  --typescale-label-medium-font: "Roboto Mono", sans-serif;
+  --typescale-label-medium-line-height: 1rem; /* 16px */
+  --typescale-label-medium-size: 0.75rem; /* 12px */
+  --typescale-label-medium-weight: 500;
+  --typescale-label-medium-weight-prominent: 600;
+
+  --typescale-label-small-font: "Roboto Mono", sans-serif;
+  --typescale-label-small-line-height: 0.875rem; /* 14px */
+  --typescale-label-small-size: 0.6875rem; /* 11px */
+  --typescale-label-small-weight: 500;
+}
