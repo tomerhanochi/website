@@ -26,6 +26,8 @@ What will be shown as the owner user ID when running the following command?
 ls -l /tmp/x
 ```
 
+<!--more-->
+
 ## Background
 Before discussing the solution to this particular problem, I want to ensure that you have the all the prerequisite knowledge used in the answer.
 

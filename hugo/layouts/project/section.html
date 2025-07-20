@@ -1,0 +1,40 @@
+{{ define "head" }}
+<style>
+  nav {
+    details {
+      summary {
+        div {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          a {
+            text-decoration: none;
+          }
+        }
+      }
+    }
+  }
+</style>
+{{ end }}
+
+{{ define "main" }}
+<nav>
+  {{ range where site.RegularPages "Type" .Type }}
+    <details name="{{ .Type }}">
+      <summary>
+        <div>
+          <p>
+            {{ .Title | markdownify }}
+          </p>
+          <a href="{{ .Params.link.url }}">
+            {{ .Params.link.text }}
+          </a>
+        </div>
+      </summary>
+      <p>
+        {{ .Summary }}
+      </p>
+    </details>
+  {{ end }}
+</nav>
+{{ end }}
