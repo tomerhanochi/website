@@ -1,15 +1,23 @@
 {{ define "head" }}
 <style>
+  @media (max-width: 768px) {
+    nav {
+      details {
+        summary {
+          div {
+            flex-direction: column;
+          }
+        }
+      }
+    }
+  }
   nav {
     details {
       summary {
         div {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          a {
-            text-decoration: underline;
-          }
+          width: 100%;
         }
       }
     }
@@ -23,11 +31,9 @@
     <details name="{{ .Type }}">
       <summary>
         <div>
-          <p>
-            <a href="{{ .RelPermalink }}" target="_blank">
-              {{ .Title | markdownify }}
-            </a>
-          </p>
+          <a href="{{ .RelPermalink }}">
+            {{ .Title | markdownify }}
+          </a>
           <time datetime="{{ .Date.Format "2006-01-02" }}">
             {{ .Date.Format "Jan 2, 2006" }}
           </time>

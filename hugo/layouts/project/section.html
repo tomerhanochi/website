@@ -1,15 +1,23 @@
 {{ define "head" }}
 <style>
+  @media (max-width: 768px) {
+    nav {
+      details {
+        summary {
+          div {
+            flex-direction: column;
+          }
+        }
+      }
+    }
+  }
   nav {
     details {
       summary {
         div {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          a {
-            text-decoration: none;
-          }
+          width: 100%;
         }
       }
     }
@@ -23,9 +31,7 @@
     <details name="{{ .Type }}">
       <summary>
         <div>
-          <p>
-            {{ .Title | markdownify }}
-          </p>
+          {{ .Title | markdownify }}
           <a href="{{ .Params.link.url }}">
             {{ .Params.link.text }}
           </a>

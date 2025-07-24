@@ -21,11 +21,11 @@ body {
     ul {
       display: flex;
       flex-direction: row;
-      align-items: center;
+      justify-content: space-evenly;
       list-style: none;
+      width: 100%;
       margin: 0;
       padding: 0;
-      gap: 1.5rem;
       li {
         margin: 0;
         a {
@@ -160,10 +160,24 @@ main {
     color: var(--color-on-secondary-container);
     margin: 0.5rem 0;
     padding: 0.25rem 1rem;
-  }
-  nav {
-    a {
-      text-decoration: none;
+    summary {
+      display: flex;
+      justify-content: left;
+      font-family: var(--typescale-title-small-font);
+      font-size: var(--typescale-title-small-size);
+      font-weight: var(--typescale-title-small-weight);
+      line-height: var(--typescale-title-small-line-height);
+      padding: 0.5rem 0;
+      &::marker {
+        content: "";
+      }
+      &::before {
+        margin-right: 1rem;
+        content: "+";
+      }
+      [open] &::before {
+        content: "-";
+      }
     }
   }
   img, iframe, video {
