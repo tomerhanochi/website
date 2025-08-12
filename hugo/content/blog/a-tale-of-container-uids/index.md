@@ -1,8 +1,8 @@
-+++
-title = "A Tale of Container UIDs"
-date = "2025-01-31"
-toc = true
-+++
+---
+title: "A Tale of Container UIDs"
+date: "2025-01-31"
+toc: true
+---
 
 ## The Question
 If a process running inside a container as user ID 1000 creates a file on a shared mount, what user ID will be shown as the file's owner when viewed from outside the container?

@@ -6,6 +6,7 @@
     <title>{{ .Site.Title }} | {{ .LinkTitle }}</title>
     {{ $stylesheet := resources.Match "css/*" | resources.Concat "css/stylesheet.css" | resources.Minify | resources.Fingerprint }}
     <link rel="stylesheet" href="{{ $stylesheet.Permalink }}" integrity="{{ $stylesheet.Data.Integrity }}" />
+    {{ partial "opengraph" . }}
     {{ block "head" . }}{{ end }}
   </head>
   <body>
