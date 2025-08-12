@@ -213,7 +213,8 @@ Strong background in cloud platforms (AWS), containerization (Docker, Kubernetes
   company: "IDF - Matzov",
   dates: dates-helper(start-date: "Aug 2023", end-date: "Nov 2025"),
 )
-- Eliminated manual deployment tasks by designing and implementing a comprehensive Ansible automation suite with custom roles and modules, to automate infrastructure provisioning.
+- Developed custom Python Ansible modules and plugins to enable fully end-to-end automated infrastructure provisioning.
+- Deployed and maintained 20+ OpenShift & K8S clusters, using GitOps principles with ArgoCD.
 - Architected Splunk-as-a-Service platform delivering isolated multi-site and highly available clusters to numerous external clients.
 - Designed DNS naming conventions and routing strategies supporting multi-site active-active and active-passive deployment patterns.
 
@@ -223,9 +224,9 @@ Strong background in cloud platforms (AWS), containerization (Docker, Kubernetes
   company: "Seemplicity Security",
   dates: dates-helper(start-date: "Jun 2021", end-date: "Feb 2023"),
 )
-- Developed microservice for automated vulnerability-to-team assignment using data-driven algorithms.
-- Created developer tooling enabling selective microservice execution for local debugging, later integrated into CI/CD pipeline for end to end tests.
-- Built polyglot build system supporting multiple languages within the organization's monorepo.
+- Developed Python-based backend services and APIs on cloud platforms, implementing distributed system components for high-scale production environments.
+- Created internal developer tooling enabling selective microservice execution for local debugging, later integrated into CI/CD pipeline for automated end to end tests.
+- Implemented Infrastructure as Code using Terraform and Python automation, standardizing deployment processes across multiple environments.
 
 == Achievements
 #certificates(
@@ -241,14 +242,14 @@ Strong background in cloud platforms (AWS), containerization (Docker, Kubernetes
   url: "github.com/tomerhanochi/libsubid"
 )
 
-Built Rust-based dynamic library to automatically assign subuid/subgid ranges to non-root users, solving manual subuid/subgid mapping for rootless containerized environments.
+Built Rust-based dynamic library to automatically assign subuid/subgid ranges to non-root users, solving manual subuid/subgid assignment for rootless containerized environments.
 
 #project(
   name: "pytris",
   url: "github.com/tomerhanochi/pytris"
 )
 
-Developed custom neural network trained via genetic algorithm in Python to autonomously play Tetris, creating both headless and GUI implementations that achieved continuous gameplay without failure.
+Developed custom neural network trained via genetic algorithm in Python to autonomously play Tetris, creating headless and GUI implementations that achieved continuous gameplay without failure.
 
 == Skills
 - Programming - Python, Go, Rust, Bash
