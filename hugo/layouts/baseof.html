@@ -4,8 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ .Site.Title }} | {{ .LinkTitle }}</title>
-    {{ $stylesheet := resources.Match "css/*" | resources.Concat "css/stylesheet.css" | resources.Minify | resources.Fingerprint }}
-    <link rel="stylesheet" href="{{ $stylesheet.Permalink }}" integrity="{{ $stylesheet.Data.Integrity }}" />
+    {{ with resources.Match "css/*" | resources.Concat "css/stylesheet.gotmpl.css" | resources.ExecuteAsTemplate "css/stylesheet.css" . | resources.Minify | resources.Fingerprint }}
+      <link rel="stylesheet" href="{{ .Permalink }}" integrity="{{ .Data.Integrity }}" />
+    {{ end }}
     {{ partial "opengraph" . }}
     {{ block "head" . }}{{ end }}
   </head>

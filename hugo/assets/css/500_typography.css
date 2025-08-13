@@ -1,3 +1,17 @@
+{{ $roboto_mono_regular := resources.Get "ttf/RobotoMono-Regular.ttf" | resources.Fingerprint }}
+@font-face {
+  font-family: 'Roboto Mono';
+  src: url({{ $roboto_mono_regular.Permalink }});
+  font-weight: 400;
+}
+
+{{ $roboto_mono_medium := resources.Get "ttf/RobotoMono-Medium.ttf" | resources.Fingerprint }}
+@font-face {
+  font-family: 'Roboto Mono';
+  src: url({{ $roboto_mono_medium.Permalink }});
+  font-weight: 500;
+}
+
 :root {
   /* Display */
   --typescale-display-large-font: "Roboto Mono", sans-serif;
@@ -68,13 +82,11 @@
   --typescale-label-large-line-height: 1.25rem; /* 20px */
   --typescale-label-large-size: 0.875rem; /* 14px */
   --typescale-label-large-weight: 500;
-  --typescale-label-large-weight-prominent: 600;
 
   --typescale-label-medium-font: "Roboto Mono", sans-serif;
   --typescale-label-medium-line-height: 1rem; /* 16px */
   --typescale-label-medium-size: 0.75rem; /* 12px */
   --typescale-label-medium-weight: 500;
-  --typescale-label-medium-weight-prominent: 600;
 
   --typescale-label-small-font: "Roboto Mono", sans-serif;
   --typescale-label-small-line-height: 0.875rem; /* 14px */

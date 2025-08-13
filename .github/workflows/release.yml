@@ -47,7 +47,7 @@ jobs:
         uses: shrink/actions-docker-extract@v3
         with:
           image: ${{ steps.build.outputs.imageid }}
-          path: /public/.
+          path: /.
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

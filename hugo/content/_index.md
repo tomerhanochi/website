@@ -1,5 +1,5 @@
 ---
-title: About Me
+title: "About"
 ---
 
 My name is Tomer Hanochi, and I'm currently employed as a Platform Engineer.

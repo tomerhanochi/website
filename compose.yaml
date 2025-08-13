@@ -12,12 +12,7 @@ services:
       - 0.0.0.0
     develop:
       watch:
-        - action: sync
-          path: ./hugo
-          target: /project
-        - action: rebuild
-          path: ./typst
-        - action: rebuild
-          path: ./Containerfile
+        - path: .
+          action: rebuild
     ports:
       - 1313:1313
