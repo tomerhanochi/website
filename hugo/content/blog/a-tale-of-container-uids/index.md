@@ -1,6 +1,8 @@
 ---
 title: "A Tale of Container UIDs"
 date: "2025-01-31"
+description: >-
+  What affects container UIDs? A deep dive on linux namespaces, uid_map and rootful/rootless containers.
 toc: true
 ---
 
