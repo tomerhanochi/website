@@ -38,8 +38,6 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          build-args: |-
-            BASE_URL=${{ steps.pages.outputs.base_url }}
           file: Containerfile
           push: false
       - name: Extract Files from Image
