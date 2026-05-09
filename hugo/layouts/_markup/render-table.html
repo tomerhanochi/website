@@ -9,7 +9,7 @@
       {{- range .THead }}
         <tr>
           {{- range . }}
-            <th
+            <th scope="col"
               {{- with .Alignment }}
                 {{- printf " style=%q" (printf "text-align: %s" .) | safeHTMLAttr }}
               {{- end -}}

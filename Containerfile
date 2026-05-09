@@ -1,55 +1,60 @@
-FROM ghcr.io/typst/typst:v0.13.1 AS typst
-
+#----- IMAGES -----#
+FROM ghcr.io/typst/typst:v0.14.2@sha256:b756590c0713ca5707654f3035e345c1d25dece2051817c11cc5591ae89992d4 AS typst
 WORKDIR /tmp
+
+FROM ghcr.io/gohugoio/hugo:v0.161.1@sha256:cef5b132b220dd5a661787d410124afe807b0ed3a79829604bdf0c3eefb85488 AS hugo
+WORKDIR /tmp
+
+#----- BUILD STEPS -----#
+FROM typst AS resume-builder
 RUN \
   --mount=type=bind,source=./typst,target=templates,readonly=true \
-  --mount=type=bind,source=./hugo/content,target=content,readonly=true \
   --mount=type=bind,source=./hugo/assets/ttf,target=fonts,readonly=true \
   <<EOFRUN
 set -eux -o pipefail
 
-mkdir rendered
+mkdir -p rendered
 
 # Resume
-typst compile templates/resume.typ rendered/resume.pdf
-
-# Thumbnails
-for index in $(find . -name index.md -or -name _index.md); do
-  frontmatter="$( awk '/^---/{if (++n==2) exit; next} n==1' "${index}" )";
-  # Extract the title from the frontmatter, by:
-  # 1. Finding the line with the title:
-  # 2. Removing the 'title: ' prefix and the '"' surrouding the title itself.
-  title="$( echo "${frontmatter}" | grep '^title: ' | sed -E 's/^title:\s*"(.*)"/\1/g')";
-  output_directory="rendered/$(dirname "${index}")";
-  mkdir -p "${output_directory}";
-  typst compile --font-path "fonts" --input "title=${title}" templates/thumbnail.typ "${output_directory}/thumbnail.png"
-done;
+typst compile --font-path "fonts" templates/resume.typ rendered/resume.pdf
 EOFRUN
 
-FROM ghcr.io/gohugoio/hugo:v0.148.1 AS hugofs
+FROM hugo AS content-lister
+RUN \
+  --mount=type=bind,source=./hugo,target=/src,readonly=true \
+  hugo list published -s /src --noBuildLock > content.csv
 
-# The hugo docker image defines a VOLUME directive, and even with --renew-anon-volumes
-# docker compose doens't change the anonymous volume.
-# Since this is a new image, it loses the VOLUME directive, unfortunately along with
-# every other directive. So we manually specify USER/WORKDIR and copy the entire root
-# filesystem.
-# If this is ever fixed, or if docker adds a cli flag to ignore volume directives,
-# these two lines can be removed, and the above FROM can be renamed to hugo.
-FROM scratch AS hugo
-COPY --from=hugofs / /
+FROM typst AS thumbnail-builder
+RUN \
+  --mount=type=bind,source=./typst,target=templates,readonly=true \
+  --mount=type=bind,source=./hugo/assets/ttf,target=fonts,readonly=true \
+  --mount=type=bind,from=content-lister,source=/tmp/content.csv,target=/tmp/content.csv \
+  <<EOFRUN
+set -eux -o pipefail
 
-USER hugo
+# Render one thumbnail per published content item, using titles from `hugo list published`
+{
+  read -r _header
+  while IFS=, read -r path slug title rest; do
+    output_directory="rendered/$(dirname "${path}")"
+    mkdir -p "${output_directory}"
+    typst compile --font-path "fonts" --input "title=${title}" templates/thumbnail.typ "${output_directory}/thumbnail.png"
+  done
+} < /tmp/content.csv
+EOFRUN
 
-WORKDIR /project
+FROM hugo AS project
 
 COPY --chown=hugo hugo/ .
-COPY --from=typst --chown=hugo /tmp/rendered/resume.pdf ./assets/pdf/resume.pdf
-COPY --from=typst --chown=hugo /tmp/rendered/content/ ./content/
+COPY --chown=hugo --from=resume-builder /tmp/rendered/resume.pdf ./assets/pdf/resume.pdf
+COPY --chown=hugo --from=thumbnail-builder /tmp/rendered/content/ ./content/
+
+FROM project AS site-builder
 
 RUN hugo build --gc --minify
 
 FROM scratch AS website
 
-COPY --from=hugo /project/public/ /
+COPY --from=site-builder /tmp/public/ /
 
 CMD ["placeholder"]

@@ -1,9 +1,15 @@
 <!DOCTYPE html>
-<html lang="{{ .Site.LanguageCode }}">
+<html lang="{{ .Site.Language.Locale }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ .Site.Title }} | {{ .LinkTitle }}</title>
+    {{ with .Description }}
+      <meta name="description" content="{{ . }}">
+    {{ end }}
+    {{ with resources.Get "svg/favicon.svg" | resources.Fingerprint }}
+      <link rel="icon" type="image/svg+xml" href="{{ .Permalink }}">
+    {{ end }}
     {{ with resources.Match "css/*" | resources.Concat "css/stylesheet.gotmpl.css" | resources.ExecuteAsTemplate "css/stylesheet.css" . | resources.Minify | resources.Fingerprint }}
       <link rel="stylesheet" href="{{ .Permalink }}" integrity="{{ .Data.Integrity }}" />
     {{ end }}
@@ -42,7 +48,7 @@
     <hr>
     <main>
       {{ block "main" . }}{{ end }}
-    <main>
+    </main>
   </body>
 </html>
 

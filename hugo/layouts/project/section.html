@@ -16,7 +16,7 @@
 
 {{ define "main" }}
 <nav>
-  {{ range where site.RegularPages "Type" .Type }}
+  {{ range (where site.RegularPages "Type" .Type).ByTitle }}
     <details name="{{ .Type }}">
       <summary>
         <div>

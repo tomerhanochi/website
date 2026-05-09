@@ -3,7 +3,6 @@ title: "A Tale of Container UIDs"
 date: "2025-01-31"
 description: >-
   What affects container UIDs? A deep dive on linux namespaces, uid_map and rootful/rootless containers.
-toc: true
 ---
 
 ## The Question
@@ -31,9 +30,9 @@ ls -l /tmp/x
 <!--more-->
 
 ## Background
-Before discussing the solution to this particular problem, I want to ensure that you have the all the prerequisite knowledge used in the answer.
+Before discussing the solution to this particular problem, I want to ensure that you have all the prerequisite knowledge used in the answer.
 
-If you feel like you already understand the subjects discussed in the following sections, you can skip to the [Revisting The Question](#revisting-the-question) Section.
+If you feel like you already understand the subjects discussed in the following sections, you can skip to the [Revisiting The Question](#revisiting-the-question) Section.
 
 ### Containers
 > Linux Containers have emerged as a key open source application packaging and delivery technology, combining lightweight application isolation with the flexibility of image-based deployment methods.
@@ -53,7 +52,7 @@ In our eyes, containers are simply processes. These processes are then isolated 
 
 Linux namespaces are isolation mechanisms used to isolate processes from certain resources accessible through the linux kernel.
 
-There are a several namespace types, but of particualr importance to containers are:
+There are a several namespace types, but of particular importance to containers are:
 * PID namespaces
 * Mount namespaces
 * Network namespaces
@@ -110,7 +109,7 @@ Results in the following mapping between user IDs in the namespace to the host:
 
 In this case, if a process running under a user with user ID 2, using the above <mark>uid_map</mark>, creates a file, a user outside the namespace will see the file as owned by user ID 1002.
 
-Any user ID/group ID not found in the <mark>uid_map</mark>/<mark>gid_map</mark> files, uses the deafult identity mapping. For example, in the same namespace, if a process run by a user with user ID 3 creates a file, then a user outside the namespace will see it is owned by user ID 3, not 1003, since it was not mapped.
+Any user ID/group ID not found in the <mark>uid_map</mark>/<mark>gid_map</mark> files, uses the default identity mapping. For example, in the same namespace, if a process run by a user with user ID 3 creates a file, then a user outside the namespace will see it is owned by user ID 3, not 1003, since it was not mapped.
 
 #### Permissions
 Not every process can modify another process's <mark>uid_map</mark>/<mark>gid_map</mark>, or even its own; several restrictions apply, which are outlined below:
@@ -172,7 +171,7 @@ Well, **we** can't do that, but **container engines** can, due to a little trick
 Container engines utilize 2 binaries called <mark>newuidmap</mark>/<mark>newgidmap</mark>, that  have the CAP_SETUID/CAP_SETGID capabilities. These binaries read <mark>/etc/subuid</mark> and <mark>/etc/subgid</mark>, verify that you have enough user IDs/group IDs to map all of the user IDs/group IDs inside the container, and modify the container process's <mark>uid_map</mark>/<mark>gid_map</mark>.
 
 
-## Revisting The Question
+## Revisiting The Question
 Now that we covered the background required, we can revisit [The Question](#the-question).
 As we've discussed previously, we know that in all possible cases, there is some kind of user ID mapping. Whether it is the identity mapping as is the default when running rootful, or some other mapping configured by the system administrator/container engine.
 
@@ -302,7 +301,7 @@ Rather unexpectedly, using <mark>\-\-uidmap</mark> doesn't actually change the m
 0        501          1
 0     100000      65535
 ```
-If you have a keen eye, you may have noticed that I used <mark>\-\-uidmap=0:0:65536</mark> and not <mark>\-\-uidmap=0:100000:65536</mark>. This is because in rootless mode, podman seperates the user and group ID mapping into 2 steps, that look like this:
+If you have a keen eye, you may have noticed that I used <mark>\-\-uidmap=0:0:65536</mark> and not <mark>\-\-uidmap=0:100000:65536</mark>. This is because in rootless mode, podman separates the user and group ID mapping into 2 steps, that look like this:
 
 | Container UID | Intermediate UID | Host UID |
 | ------------- | ---------------- | -------- |

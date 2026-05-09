@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Containerfile
-      target: hugo
+      target: project
     entrypoint:
       - /usr/bin/hugo
     command:
@@ -15,5 +15,9 @@ services:
       watch:
         - path: .
           action: rebuild
+          ignore:
+            - .git
+            - public
+            - .hugo_build.lock
     ports:
       - 1313:1313

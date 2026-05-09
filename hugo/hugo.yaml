@@ -3,6 +3,10 @@ title: "Tomer Hanochi's Blog"
 
 enableRobotsTXT: true
 
+disableKinds:
+  - taxonomy
+  - term
+
 markup:
   highlight:
     style: onedark
