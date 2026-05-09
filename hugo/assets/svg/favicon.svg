@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><text y="13" font-size="14" font-family="monospace">T</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <style>
+    .bg { fill: #6750a4; }
+    .fg { fill: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #D0BCFF; }
+      .fg { fill: #381E72; }
+    }
+  </style>
+  <rect class="bg" width="16" height="16" rx="3"/>
+  <text class="fg" x="8" y="12" text-anchor="middle" font-size="10" font-family="monospace" font-weight="bold">TH</text>
+</svg>
