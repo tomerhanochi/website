@@ -8,7 +8,7 @@ WORKDIR /tmp
 #----- BUILD STEPS -----#
 FROM typst AS resume-builder
 RUN \
-  --mount=type=bind,source=./typst,target=templates,readonly=true \
+  --mount=type=bind,source=./typst/resume,target=templates,readonly=true \
   --mount=type=bind,source=./hugo/assets/ttf,target=fonts,readonly=true \
   <<EOFRUN
 set -eux -o pipefail
@@ -16,7 +16,7 @@ set -eux -o pipefail
 mkdir -p rendered
 
 # Resume
-typst compile --font-path "fonts" templates/resume.typ rendered/resume.pdf
+typst compile --font-path "fonts" templates/content.typ rendered/resume.pdf
 EOFRUN
 
 FROM hugo AS content-lister
