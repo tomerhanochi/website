@@ -23,9 +23,8 @@ Software Engineer with 5+ years of experience developing scalable backend system
   company: "Visual Layer (Acquired by Camtek)",
   dates: dates-helper(start-date: "Dec 2025", end-date: "Present"),
 )
-- Partnered with the research team to upgrade the production single-vector search system to support multi-vector queries, enabling simultaneous textual and visual inputs with positive and negative examples.
-- Developed and deployed a fully offline, on-premise agentic workflow solution to automate and replace legacy manual processes.
-- Improved the overall performance of the core conversational copilot (VL Chat), successfully reducing latency by 50%.
+- Partnered with the research team to extend the production retrieval system from single-vector to multi-vector search, enabling combined text-and-image queries with positive and negative exemplars.
+- Designed and built an air-gapped agentic workflow system based on langgraph, with local models served via llama.cpp.
 
 #work(
   title: "DevOps & Platform Engineer",
